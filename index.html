@@ -516,9 +516,51 @@
       font-family: var(--font-mono);
       font-size: 12px;
       color: #7be8d8;
+      position: relative;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 6px; right: 6px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--muted);
+      background: #0a1a22;
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      border-radius: 2px;
+      cursor: pointer;
+      letter-spacing: 0.08em;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .copy-btn:hover {
+      color: var(--accent);
+      border-color: var(--dim);
+    }
+    .copy-btn.copied {
+      color: #00ff88;
+      border-color: #00ff88;
     }
 
-    /* thinking/loading */
+    .msg-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 5px;
+    }
+    .msg-action-btn {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid #0a2030;
+      padding: 2px 8px;
+      border-radius: 2px;
+      cursor: pointer;
+      letter-spacing: 0.08em;
+      transition: all 0.15s;
+    }
+    .msg-action-btn:hover { color: var(--accent); border-color: var(--dim); }
+    .msg-action-btn.copied { color: #00ff88; border-color: #00ff88; }
     .thinking-dots span {
       animation: blink 1.2s infinite;
       color: var(--accent);
@@ -1074,6 +1116,7 @@
             ? '<span class="thinking-dots"><span>.</span><span>.</span><span>.</span></span>'
             : formatText(text)
         }</div>
+        ${!isUser && !isThinking ? `<div class="msg-actions"><button class="msg-action-btn" id="copymsg-${id}" onclick="copyMsg('${id}')">⎘ COPY MSG</button></div>` : ''}
       </div>`;
 
     wrap.appendChild(div);
@@ -1091,33 +1134,39 @@
   }
 
   function formatText(raw) {
-    // Extract code blocks first, escape their content, hold as placeholders
-    const codeBlocks = [];
-    let text = raw.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+    const codeBlocks  = [];
+    const inlineCodes = [];
+    const PH_BLOCK  = s => `\x02BLOCK${s}\x03`;
+    const PH_INLINE = s => `\x02INLINE${s}\x03`;
+
+    // 1. Extract fenced code blocks (``` ... ```)
+    let text = raw.replace(/```(\w*)\r?\n?([\s\S]*?)```/g, (_, lang, code) => {
       const idx = codeBlocks.length;
-      codeBlocks.push(`<pre><code>${escapeHtmlRaw(code)}</code></pre>`);
-      return `\x00CODE${idx}\x00`;
+      const langLabel = lang ? `<span style="font-size:9px;color:var(--muted);display:block;margin-bottom:4px;letter-spacing:.1em">${escapeHtmlRaw(lang.toUpperCase())}</span>` : '';
+      const escapedCode = escapeHtmlRaw(code.replace(/^\n|\n$/g,''));
+      const rawForCopy  = code.replace(/^\n|\n$/g,'').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+      codeBlocks.push(`<pre><button class="copy-btn" onclick="copyCode(this, '${rawForCopy}')">COPY</button>${langLabel}<code>${escapedCode}</code></pre>`);
+      return PH_BLOCK(idx);
     });
 
-    // Inline code — escape content
-    const inlineCodes = [];
-    text = text.replace(/`([^`]+)`/g, (_, code) => {
+    // 2. Extract inline code (` ... `)
+    text = text.replace(/`([^`\n]+)`/g, (_, code) => {
       const idx = inlineCodes.length;
       inlineCodes.push(`<code>${escapeHtmlRaw(code)}</code>`);
-      return `\x00INLINE${idx}\x00`;
+      return PH_INLINE(idx);
     });
 
-    // Escape everything else
+    // 3. Escape all remaining HTML
     text = escapeHtmlRaw(text);
 
-    // Apply markdown on safe text
-    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    // 4. Safe markdown: bold, italic, newlines
+    text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
     text = text.replace(/\n/g, '<br>');
 
-    // Restore placeholders
-    text = text.replace(/\x00CODE(\d+)\x00/g, (_, i) => codeBlocks[i]);
-    text = text.replace(/\x00INLINE(\d+)\x00/g, (_, i) => inlineCodes[i]);
+    // 5. Restore placeholders (they survived escaping as-is since they're control chars)
+    text = text.replace(/\x02BLOCK(\d+)\x03/g,  (_, i) => codeBlocks[i]);
+    text = text.replace(/\x02INLINE(\d+)\x03/g, (_, i) => inlineCodes[i]);
 
     return text;
   }
@@ -1246,6 +1295,7 @@
       }
 
       messages.push({ role: 'assistant', content: full });
+      addCopyActionToMsg(botId);
 
     } catch (err) {
       // Don't expose raw error details that could leak info
@@ -1274,6 +1324,58 @@
       e.preventDefault();
       sendMessage();
     }
+  }
+
+  function copyMsg(id) {
+    const el  = document.getElementById('text-' + id);
+    const btn = document.getElementById('copymsg-' + id);
+    if (!el || !btn) return;
+    const text = el.innerText || el.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✔ COPIED';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '⎘ COPY MSG'; btn.classList.remove('copied'); }, 2000);
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta);
+      btn.textContent = '✔ COPIED';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '⎘ COPY MSG'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  function addCopyActionToMsg(id) {
+    // After streaming done, insert copy button if not already there
+    const body = document.querySelector(`#${id} .msg-body`);
+    if (!body || body.querySelector('.msg-actions')) return;
+    const actions = document.createElement('div');
+    actions.className = 'msg-actions';
+    actions.innerHTML = `<button class="msg-action-btn" id="copymsg-${id}" onclick="copyMsg('${id}')">⎘ COPY MSG</button>`;
+    body.appendChild(actions);
+  }
+
+  function copyCode(btn, escaped) {
+    const text = escaped.replace(/\\n/g, '\n').replace(/\\'/g, "'");
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'COPIED!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
+    }).catch(() => {
+      // Fallback for browsers without clipboard API
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta);
+      btn.textContent = 'COPIED!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
+    });
   }
 
   function updateCharCount(el) {
