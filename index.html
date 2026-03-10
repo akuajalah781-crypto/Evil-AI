@@ -859,7 +859,8 @@
 
   // ── State ───────────────────────────────────────────────────
   let defaultPersonaContent = '';
-  let activePersonaKey = null; // '__default__' | name | null
+  let activePersonaKey = null;
+  let activeSystemPrompt = ''; // source of truth for system prompt
 
   // ── Init ────────────────────────────────────────────────────
   window.addEventListener('DOMContentLoaded', () => {
@@ -876,6 +877,12 @@
 
     // render persona chips
     renderPersonaList();
+
+    // sync activeSystemPrompt whenever textarea is edited manually
+    document.getElementById('sysInstructions').addEventListener('input', function() {
+      activeSystemPrompt = this.value.trim();
+      updateSysIndicator();
+    });
   });
 
   // ── Clock ───────────────────────────────────────────────────
@@ -898,6 +905,19 @@
       return document.getElementById('customModel').value.trim() || 'vertex_ai/deepseek-ai/deepseek-v3.2-maas';
     }
     return sel;
+  }
+
+  function updateSysIndicator() {
+    const btn = document.getElementById('toggleSys');
+    if (activeSystemPrompt.trim()) {
+      btn.style.borderColor = 'var(--accent)';
+      btn.style.color = 'var(--accent)';
+      btn.style.boxShadow = 'var(--glow)';
+    } else {
+      btn.style.borderColor = '';
+      btn.style.color = '';
+      btn.style.boxShadow = '';
+    }
   }
 
   // ── System Panel toggle ─────────────────────────────────────
@@ -971,6 +991,8 @@
     }
     activePersonaKey = key;
     document.getElementById('sysInstructions').value = content;
+    activeSystemPrompt = content;
+    updateSysIndicator();
 
     // update default box highlight
     const box = document.getElementById('defaultPersonaBox');
@@ -1062,9 +1084,11 @@
     clr.textContent = '✕ clear';
     clr.onclick = () => {
       activePersonaKey = null;
+      activeSystemPrompt = '';
       document.getElementById('sysInstructions').value = '';
       document.getElementById('activePersonaName').textContent = 'none';
       document.getElementById('defaultPersonaBox').classList.remove('active-persona');
+      updateSysIndicator();
       renderPersonaList();
     };
     list.appendChild(clr);
@@ -1082,8 +1106,10 @@
   function activateBuiltin(key, label) {
     activePersonaKey = key;
     document.getElementById('sysInstructions').value = BUILTIN_CONTENT[key];
+    activeSystemPrompt = BUILTIN_CONTENT[key];
     document.getElementById('activePersonaName').textContent = label.replace(/^[^\s]+\s/, '').toUpperCase();
     document.getElementById('defaultPersonaBox').classList.remove('active-persona');
+    updateSysIndicator();
     renderPersonaList();
   }
 
@@ -1218,8 +1244,9 @@
   async function sendMessage() {
     const input   = document.getElementById('userInput');
     const apiKey  = document.getElementById('apiKey').value.trim();
-    const sysRaw  = document.getElementById('sysInstructions').value.trim();
     const rawText = input.value;
+    // Read from JS variable (not textarea which may be in display:none panel)
+    const sysText = activeSystemPrompt.slice(0, SEC.MAX_SYS_CHARS);
 
     // ── Rate limiting ──────────────────────────────────────────
     const now = Date.now();
@@ -1239,9 +1266,6 @@
     if (rawText.trim().length > SEC.MAX_INPUT_CHARS) {
       showToast(`⚠ Pesan dipotong ke ${SEC.MAX_INPUT_CHARS} karakter`, 4000);
     }
-
-    // ── Truncate system prompt if too long ─────────────────────
-    const sysText = sysRaw.slice(0, SEC.MAX_SYS_CHARS);
 
     // ── Commit ─────────────────────────────────────────────────
     lastSendTime = now;
