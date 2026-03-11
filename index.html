@@ -705,10 +705,180 @@
     }
     @keyframes fadeIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
 
+    /* ─── HISTORY DRAWER ─────────────────────── */
+    #historyDrawer {
+      position: fixed;
+      top: 0; right: -320px;
+      width: 300px;
+      height: 100dvh;
+      background: #030d12;
+      border-left: 1px solid var(--border);
+      z-index: 9000;
+      display: flex;
+      flex-direction: column;
+      transition: right 0.25s cubic-bezier(.4,0,.2,1);
+      box-shadow: -8px 0 32px rgba(0,0,0,0.6);
+    }
+    #historyDrawer.open { right: 0; }
+
+    #historyOverlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 8999;
+      display: none;
+      backdrop-filter: blur(2px);
+    }
+    #historyOverlay.open { display: block; }
+
+    .hist-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .hist-title {
+      font-family: var(--font-head);
+      font-size: 13px;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+    }
+    .hist-close {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      background: none;
+      border: 1px solid var(--border);
+      padding: 3px 10px;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .hist-close:hover { color: var(--accent2); border-color: var(--accent2); }
+
+    .hist-actions {
+      display: flex;
+      gap: 6px;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .hist-btn {
+      flex: 1;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      padding: 6px 8px;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .hist-btn-new {
+      color: var(--accent);
+      background: rgba(0,255,231,0.07);
+      border: 1px solid var(--dim);
+    }
+    .hist-btn-new:hover { background: rgba(0,255,231,0.15); border-color: var(--accent); }
+    .hist-btn-save {
+      color: #00ff88;
+      background: rgba(0,255,136,0.07);
+      border: 1px solid #0a4030;
+    }
+    .hist-btn-save:hover { background: rgba(0,255,136,0.15); border-color: #00ff88; }
+    .hist-btn-del {
+      color: var(--accent2);
+      background: rgba(255,0,60,0.07);
+      border: 1px solid #3a0010;
+    }
+    .hist-btn-del:hover { background: rgba(255,0,60,0.15); border-color: var(--accent2); }
+
+    .hist-search {
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .hist-search input {
+      width: 100%;
+      font-size: 11px;
+      padding: 5px 10px;
+    }
+
+    #sessionList {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--dim) transparent;
+    }
+
+    .sess-item {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border-bottom: 1px solid #050f16;
+      transition: background 0.12s;
+      cursor: pointer;
+    }
+    .sess-item:hover { background: #071520; }
+    .sess-item.active-sess { background: #071d28; border-left: 2px solid var(--accent); }
+
+    .sess-main {
+      flex: 1;
+      padding: 9px 14px;
+      min-width: 0;
+    }
+    .sess-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sess-item.active-sess .sess-title { color: var(--accent); }
+    .sess-meta {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .sess-del {
+      padding: 8px 12px;
+      color: #1a3040;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      transition: color 0.15s;
+      flex-shrink: 0;
+    }
+    .sess-del:hover { color: var(--accent2); }
+
+    .hist-empty {
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      padding: 32px 16px;
+    }
+
+    .hist-footer {
+      padding: 8px 14px;
+      border-top: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--muted);
+      text-align: center;
+      flex-shrink: 0;
+    }
+
     @media (max-width: 600px) {
       .logo-text { font-size: 14px; }
       .status-bar .hide-sm { display: none; }
       #model { min-width: 120px; }
+      #historyDrawer { width: 85vw; }
     }
   </style>
 </head>
@@ -738,6 +908,7 @@
       <div class="status-dot"></div>
       <span class="hide-sm">CONN: ENCRYPTED</span>
       <span id="clock">--:--:--</span>
+      <button class="hist-close" style="font-size:10px;padding:2px 8px;" onclick="toggleHistory()" title="Chat History">⌗ HISTORY</button>
     </div>
   </header>
 
@@ -841,8 +1012,24 @@
   <div class="footer">[ CYBERMIND AI // TRAFFIC ENCRYPTED // POWERED BY LITELLM ]</div>
 </div>
 
+<div id="historyOverlay" onclick="toggleHistory()"></div>
+<div id="historyDrawer">
+  <div class="hist-head">
+    <span class="hist-title">// SESSIONS</span>
+    <button class="hist-close" onclick="toggleHistory()">✕ CLOSE</button>
+  </div>
+  <div class="hist-actions">
+    <button class="hist-btn hist-btn-new" onclick="newSession()">+ NEW</button>
+    <button class="hist-btn hist-btn-save" onclick="saveCurrentSession()">💾 SAVE</button>
+    <button class="hist-btn hist-btn-del" onclick="clearAllHistory()">🗑 CLEAR ALL</button>
+  </div>
+  <div class="hist-search">
+    <input type="text" id="sessSearch" placeholder="Search sessions..." oninput="renderSessionList()"/>
+  </div>
+  <div id="sessionList"></div>
+  <div class="hist-footer" id="histFooter">0 sessions</div>
+</div>
 <div id="toast"></div>
-
 <script>
   const API_URL = "https://litellm.koboi2026.biz.id/v1/chat/completions";
   let messages = [];
@@ -887,6 +1074,9 @@
       activeSystemPrompt = this.value.trim();
       updateSysIndicator();
     });
+
+    // Restore last session
+    restoreLastSession();
   });
 
   // ── Clock ───────────────────────────────────────────────────
@@ -1182,7 +1372,7 @@
       const escapedCode = escapeHtmlRaw(code.replace(/^\n|\n$/g,''));
       const rawForCopy  = code.replace(/^\n|\n$/g,'').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
       const langLabel   = lang ? `<span class="pre-lang">${escapeHtmlRaw(lang.toUpperCase())}</span>` : '<span></span>';
-      codeBlocks.push(`<div class="code-wrap"><div class="pre-header">${langLabel}<button class="copy-btn" onclick="copyCode(this, '${rawForCopy}')">COPY</button></div><pre><code>${escapedCode}</code></pre></div>`);
+      codeBlocks.push(`<div class="code-wrap"><div class="pre-header">${langLabel}<button class="copy-btn" onclick="copyCode(this)">COPY</button></div><pre><code>${escapedCode}</code></pre></div>`);
       return PH_BLOCK(idx);
     });
 
@@ -1331,6 +1521,7 @@
 
       messages.push({ role: 'assistant', content: full });
       addCopyActionToMsg(botId);
+      autoSave(); // persist after every response
 
     } catch (err) {
       // Don't expose raw error details that could leak info
@@ -1344,7 +1535,241 @@
   }
 
 
+  // ══════════════════════════════════════════
+  // SESSION HISTORY SYSTEM (localStorage)
+  // ══════════════════════════════════════════
+  const LS_SESSIONS   = 'cm_sessions';
+  const LS_ACTIVE_SID = 'cm_active_sid';
+  const MAX_SESSIONS  = 50;
+  let currentSessionId = null;
+
+  function genId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
+  function getSessions() {
+    try { return JSON.parse(localStorage.getItem(LS_SESSIONS) || '[]'); }
+    catch { return []; }
+  }
+
+  function saveSessions(arr) {
+    // Keep max sessions, newest first
+    const trimmed = arr.slice(0, MAX_SESSIONS);
+    localStorage.setItem(LS_SESSIONS, JSON.stringify(trimmed));
+  }
+
+  function getSessionTitle(msgs) {
+    // Use first user message as title
+    const first = msgs.find(m => m.role === 'user');
+    if (!first) return 'New Session';
+    return first.content.slice(0, 48) + (first.content.length > 48 ? '…' : '');
+  }
+
+  function formatRelTime(ts) {
+    const diff = Date.now() - ts;
+    if (diff < 60000)   return 'just now';
+    if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
+    if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
+    return new Date(ts).toLocaleDateString();
+  }
+
+  // Auto-save after every AI response
+  function autoSave() {
+    if (messages.length === 0) return;
+    const sessions = getSessions();
+    const idx = sessions.findIndex(s => s.id === currentSessionId);
+    const entry = {
+      id:        currentSessionId || (currentSessionId = genId()),
+      title:     getSessionTitle(messages),
+      messages:  messages,
+      model:     getModel(),
+      sysPrompt: activeSystemPrompt,
+      updatedAt: Date.now(),
+      createdAt: idx >= 0 ? sessions[idx].createdAt : Date.now(),
+    };
+    if (idx >= 0) sessions[idx] = entry;
+    else sessions.unshift(entry);
+    saveSessions(sessions);
+    localStorage.setItem(LS_ACTIVE_SID, currentSessionId);
+    renderSessionList();
+  }
+
+  function saveCurrentSession() {
+    if (messages.length === 0) { showToast('⚠ Tidak ada pesan untuk disimpan'); return; }
+    autoSave();
+    showToast('✔ Session tersimpan');
+  }
+
+  function loadSession(id) {
+    const sessions = getSessions();
+    const sess = sessions.find(s => s.id === id);
+    if (!sess) return;
+
+    // Save current before switching if has messages
+    if (messages.length > 0 && currentSessionId !== id) autoSave();
+
+    currentSessionId = id;
+    messages = sess.messages || [];
+    localStorage.setItem(LS_ACTIVE_SID, id);
+
+    // Restore model if saved
+    if (sess.model) {
+      const sel = document.getElementById('model');
+      const opt = [...sel.options].find(o => o.value === sess.model);
+      if (opt) sel.value = sess.model;
+      else {
+        sel.value = 'custom';
+        document.getElementById('customModel').value = sess.model;
+        document.getElementById('customModel').style.display = 'inline-block';
+      }
+    }
+
+    // Restore system prompt if saved
+    if (sess.sysPrompt) {
+      activeSystemPrompt = sess.sysPrompt;
+      document.getElementById('sysInstructions').value = sess.sysPrompt;
+      document.getElementById('activePersonaName').textContent = 'RESTORED';
+      updateSysIndicator();
+    }
+
+    // Re-render chat
+    rebuildChatUI();
+    renderSessionList();
+    toggleHistory();
+    showToast(`✔ Session dimuat: ${sess.title.slice(0,30)}`);
+  }
+
+  function rebuildChatUI() {
+    const wrap = document.getElementById('chatWrap');
+    if (messages.length === 0) {
+      wrap.innerHTML = `<div id="emptyState">
+        <div class="big-icon">⬡</div>
+        <div class="big-label">TERMINAL READY</div>
+        <div class="big-sub">// Initialize query sequence to begin</div>
+      </div>`;
+      return;
+    }
+    wrap.innerHTML = '';
+    messages.forEach((m, i) => {
+      const isUser = m.role === 'user';
+      const id = 'hist-msg-' + i;
+      const avatar = isUser ? 'YOU' : 'AI';
+      const name   = isUser ? 'OPERATOR' : 'CYBERMIND';
+      const div = document.createElement('div');
+      div.className = `msg ${isUser ? 'user' : 'bot'}`;
+      div.id = id;
+      div.innerHTML = `
+        <div class="msg-avatar">${avatar}</div>
+        <div class="msg-body">
+          <div class="msg-meta">
+            <span class="msg-name">${name}</span>
+          </div>
+          <div class="msg-text" id="text-${id}">${formatText(m.content)}</div>
+          ${!isUser ? `<div class="msg-actions"><button class="msg-action-btn" id="copymsg-${id}" onclick="copyMsg('${id}')">⎘ COPY MSG</button></div>` : ''}
+        </div>`;
+      wrap.appendChild(div);
+    });
+    wrap.scrollTop = wrap.scrollHeight;
+  }
+
+  function deleteSession(id, e) {
+    e.stopPropagation();
+    const sessions = getSessions().filter(s => s.id !== id);
+    saveSessions(sessions);
+    if (currentSessionId === id) {
+      currentSessionId = null;
+      messages = [];
+      rebuildChatUI();
+    }
+    renderSessionList();
+    showToast('Session dihapus');
+  }
+
+  function newSession() {
+    if (messages.length > 0) autoSave();
+    currentSessionId = genId();
+    messages = [];
+    rebuildChatUI();
+    renderSessionList();
+    toggleHistory();
+    showToast('✔ Session baru dimulai');
+  }
+
+  function clearAllHistory() {
+    if (!confirm('Hapus semua session history?')) return;
+    localStorage.removeItem(LS_SESSIONS);
+    localStorage.removeItem(LS_ACTIVE_SID);
+    currentSessionId = null;
+    messages = [];
+    rebuildChatUI();
+    renderSessionList();
+    showToast('🗑 Semua history dihapus');
+  }
+
+  function renderSessionList() {
+    const list = document.getElementById('sessionList');
+    const footer = document.getElementById('histFooter');
+    const q = (document.getElementById('sessSearch')?.value || '').toLowerCase();
+    let sessions = getSessions();
+    if (q) sessions = sessions.filter(s => s.title.toLowerCase().includes(q));
+
+    footer.textContent = `${getSessions().length} session${getSessions().length !== 1 ? 's' : ''} tersimpan`;
+
+    if (sessions.length === 0) {
+      list.innerHTML = `<div class="hist-empty">${q ? 'Tidak ada hasil' : 'Belum ada session tersimpan.<br>Mulai chat lalu tekan 💾 SAVE'}</div>`;
+      return;
+    }
+
+    list.innerHTML = sessions.map(s => `
+      <div class="sess-item ${s.id === currentSessionId ? 'active-sess' : ''}" onclick="loadSession('${s.id}')">
+        <div class="sess-main">
+          <div class="sess-title">${escapeHtmlRaw(s.title)}</div>
+          <div class="sess-meta">${s.messages.length} msg · ${s.model ? escapeHtmlRaw(s.model.split('/').pop()) : '?'} · ${formatRelTime(s.updatedAt)}</div>
+        </div>
+        <button class="sess-del" onclick="deleteSession('${s.id}', event)" title="Hapus">✕</button>
+      </div>`).join('');
+  }
+
+  function toggleHistory() {
+    const drawer = document.getElementById('historyDrawer');
+    const overlay = document.getElementById('historyOverlay');
+    const isOpen = drawer.classList.contains('open');
+    drawer.classList.toggle('open');
+    overlay.classList.toggle('open');
+    if (!isOpen) {
+      renderSessionList();
+      document.getElementById('sessSearch').value = '';
+    }
+  }
+
+  // Restore last active session on load
+  function restoreLastSession() {
+    const lastId = localStorage.getItem(LS_ACTIVE_SID);
+    if (!lastId) return;
+    const sessions = getSessions();
+    const sess = sessions.find(s => s.id === lastId);
+    if (!sess || sess.messages.length === 0) return;
+    currentSessionId = lastId;
+    messages = sess.messages;
+    if (sess.sysPrompt) {
+      activeSystemPrompt = sess.sysPrompt;
+      document.getElementById('sysInstructions').value = sess.sysPrompt;
+      document.getElementById('activePersonaName').textContent = 'RESTORED';
+      updateSysIndicator();
+    }
+    if (sess.model) {
+      const sel = document.getElementById('model');
+      const opt = [...sel.options].find(o => o.value === sess.model);
+      if (opt) sel.value = sess.model;
+    }
+    rebuildChatUI();
+    showToast(`↺ Session terakhir dipulihkan`, 2500);
+  }
+  // ══════════════════════════════════════════
+
   function clearChat() {
+    if (messages.length > 0) autoSave(); // save before clearing
+    currentSessionId = genId(); // new session id for next chat
     messages = [];
     document.getElementById('chatWrap').innerHTML = `
       <div id="emptyState">
@@ -1393,25 +1818,42 @@
     body.appendChild(actions);
   }
 
-  function copyCode(btn, escaped) {
-    const text = escaped.replace(/\\n/g, '\n').replace(/\\'/g, "'").replace(/\\\\/g, '\\');
-    navigator.clipboard.writeText(text).then(() => {
-      btn.textContent = 'COPIED!';
-      btn.classList.add('copied');
-      setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
-    }).catch(() => {
-      // Fallback for browsers without clipboard API
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed'; ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select(); document.execCommand('copy');
-      document.body.removeChild(ta);
-      btn.textContent = 'COPIED!';
-      btn.classList.add('copied');
-      setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
-    });
-  }
+  function copyCode(btn) {
+  const codeEl = btn.parentElement.nextElementSibling.querySelector("code");
+  if (!codeEl) return;
+
+  const text = codeEl.innerText;
+
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = "COPIED!";
+    btn.classList.add("copied");
+
+    setTimeout(() => {
+      btn.textContent = "COPY";
+      btn.classList.remove("copied");
+    }, 2000);
+
+  }).catch(() => {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+
+    ta.select();
+    document.execCommand("copy");
+
+    document.body.removeChild(ta);
+
+    btn.textContent = "COPIED!";
+    btn.classList.add("copied");
+
+    setTimeout(() => {
+      btn.textContent = "COPY";
+      btn.classList.remove("copied");
+    }, 2000);
+  });
+}
 
   function updateCharCount(el) {
     const len = el.value.length;
